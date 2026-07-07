@@ -70,8 +70,8 @@
     /* ── Node rows ───────────────────────────── */
     .row-tl      { display: flex; justify-content: center; }
     .row-artists { display: flex; justify-content: center; gap: 8px; margin-top: 44px; flex-wrap: nowrap; }
-    .row-games   { display: flex; justify-content: center; gap: 8px; margin-top: 40px; flex-wrap: nowrap; }
-    .row-clients { display: flex; justify-content: center; gap: 8px; margin-top: 36px; flex-wrap: nowrap; }
+    .row-games   { display: flex; justify-content: center; gap: 8px; margin-top: 56px; flex-wrap: nowrap; }
+    .row-clients { display: flex; justify-content: center; gap: 8px; margin-top: 48px; flex-wrap: nowrap; }
 
     /* ── Node base ───────────────────────────── */
     .tree-node {
@@ -507,22 +507,56 @@ function drawConnectors(team) {
   if (aPos.length > 1) addPath(svg, `M ${aPos[0].cx} ${tlBusY} L ${aPos[aPos.length-1].cx} ${tlBusY}`);
   aPos.forEach(ap => { addPath(svg, `M ${ap.cx} ${tlBusY} L ${ap.cx} ${ap.top}`); addArrow(svg, ap.cx, ap.top); });
 
-  // ── Artists → games ──
-  // Single artist: elbow. Multiple artists sharing a game: reverse T-bus then drop.
-  team.games.forEach((game, gi) => {
-    const gp  = gPos[gi];
-    const pts = game.artists.map(a => aPos[artistIdx.get(a)]).filter(Boolean);
-    if (!pts.length) return;
-    if (pts.length === 1) {
-      addElbow(svg, pts[0].cx, pts[0].bottom, gp.cx, gp.top);
+  // ── Compute spread departure x per artist per game ──
+  // Artists with N games get N evenly-spaced departure points across their box bottom.
+  // Departure points are sorted to match the left-to-right order of the target games
+  // so lines don't cross each other.
+  const SPREAD = 28;
+  const artistGameIdxs = new Map(artists.map(a => [a, []]));
+  team.games.forEach((game, gi) => game.artists.forEach(a => { if (artistGameIdxs.has(a)) artistGameIdxs.get(a).push(gi); }));
+
+  const depX = new Map();
+  artists.forEach(a => {
+    const gameIdxs = artistGameIdxs.get(a);
+    const N = gameIdxs.length;
+    const ap = aPos[artistIdx.get(a)];
+    const map = new Map();
+    if (N === 1) {
+      map.set(gameIdxs[0], ap.cx);
     } else {
-      addBus(svg, pts.map(p => p.cx), gp.cx, pts[0].bottom, gp.top);
+      // Sort target games left→right so spread departure order matches game order
+      const sorted = [...gameIdxs].sort((a, b) => gPos[a].cx - gPos[b].cx);
+      sorted.forEach((gi, k) => {
+        map.set(gi, ap.cx + (k / (N - 1) - 0.5) * 2 * SPREAD);
+      });
+    }
+    depX.set(a, map);
+  });
+
+  // ── Artists → games ──
+  team.games.forEach((game, gi) => {
+    const gp = gPos[gi];
+    const sources = game.artists.map(a => {
+      const ai = artistIdx.get(a);
+      if (ai == null) return null;
+      return { x: depX.get(a).get(gi), bottom: aPos[ai].bottom };
+    }).filter(Boolean);
+    if (!sources.length) return;
+
+    if (sources.length === 1) {
+      addElbow(svg, sources[0].x, sources[0].bottom, gp.cx, gp.top);
+    } else {
+      // Merge: all sources drop to a shared bus, then one drop to the game
+      const busY = sources[0].bottom + (gp.top - sources[0].bottom) / 2;
+      sources.forEach(s => addPath(svg, `M ${s.x} ${s.bottom} L ${s.x} ${busY}`));
+      const xs = [...sources.map(s => s.x), gp.cx];
+      addPath(svg, `M ${Math.min(...xs)} ${busY} L ${Math.max(...xs)} ${busY}`);
+      addPath(svg, `M ${gp.cx} ${busY} L ${gp.cx} ${gp.top}`);
     }
     addArrow(svg, gp.cx, gp.top);
   });
 
   // ── Games → clients ──
-  // Group games by client, then same pattern.
   const byClient = new Map();
   team.games.forEach((game, gi) => {
     const ci = clientIdx.get(game.client);
