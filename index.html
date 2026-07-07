@@ -408,11 +408,11 @@ function renderTeam(team) {
       <div class="tree-container">
         <div class="tree-inner" id="tree-${tid}">
           <div class="row-tl">
+            ${team.leadArtist ? `<div class="tree-node node-artist alt-blue" id="la-${tid}"><div class="node-name">${team.leadArtist}</div></div>` : ''}
             <div class="tree-node node-tl" id="tl-${tid}">
               <div class="node-name">${team.lead}</div>
               <div class="node-role">Creative Team Lead</div>
             </div>
-            ${team.leadArtist ? `<div class="tree-node node-artist alt-blue" id="la-${tid}"><div class="node-name">${team.leadArtist}</div></div>` : ''}
           </div>
           ${seniorNodes ? `<div class="row-seniors">${seniorNodes}</div>` : ''}
           <div class="row-artists">${artistNodes}</div>
@@ -531,19 +531,32 @@ function drawConnectors(team) {
     srPos.forEach(sp => { addPath(svg, `M ${sp.cx} ${srBusY} L ${sp.cx} ${sp.top}`); addArrow(svg, sp.cx, sp.top); });
   }
 
-  // ── TL ↔ Lead Artist (horizontal connector) ──
+  // ── TL ↔ Lead Artist (horizontal connector, LA is to the LEFT of TL) ──
   if (la) {
     const midY = (tl.top + tl.bottom) / 2;
-    addPath(svg, `M ${tl.right} ${midY} L ${la.left} ${midY}`);
+    addPath(svg, `M ${la.right} ${midY} L ${tl.left} ${midY}`);
   }
 
-  // ── Lead Artist → games ──
-  if (la && aPos.length) {
-    const laGapMidY = aPos[0].bottom + (gPos[0].top - aPos[0].bottom) / 2;
+  // ── Lead Artist → games (route OUTSIDE the artist row to avoid crossings) ──
+  if (la && gPos.length) {
+    const leftEdge = aPos.length ? Math.min(aPos[0].left - 16, la.left - 8) : la.left - 8;
+    const gapY = aPos.length
+      ? aPos[0].bottom + (gPos[0].top - aPos[0].bottom) / 2
+      : (la.bottom + gPos[0].top) / 2;
+    const r = CORNER_R;
     team.games.forEach((game, gi) => {
       if (!game.artists.includes(team.leadArtist)) return;
       const gp = gPos[gi];
-      addElbow(svg, la.cx, la.bottom, gp.cx, gp.top, laGapMidY);
+      addPath(svg,
+        `M ${la.cx} ${la.bottom}` +
+        ` L ${leftEdge + r} ${la.bottom}` +
+        ` Q ${leftEdge} ${la.bottom} ${leftEdge} ${la.bottom + r}` +
+        ` L ${leftEdge} ${gapY - r}` +
+        ` Q ${leftEdge} ${gapY} ${leftEdge + r} ${gapY}` +
+        ` L ${gp.cx - r} ${gapY}` +
+        ` Q ${gp.cx} ${gapY} ${gp.cx} ${gapY + r}` +
+        ` L ${gp.cx} ${gp.top}`
+      );
       addArrow(svg, gp.cx, gp.top);
     });
   }
