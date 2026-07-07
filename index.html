@@ -465,10 +465,10 @@ function addArrow(svg, x, y) {
 }
 
 // Orthogonal elbow: source bottom → midY → target top, with rounded corners
-function addElbow(svg, x1, y1, x2, y2) {
+function addElbow(svg, x1, y1, x2, y2, midY) {
   if (Math.abs(x1 - x2) < 1) { addPath(svg, `M ${x1} ${y1} L ${x2} ${y2}`); return; }
-  const midY = (y1 + y2) / 2;
-  const r = Math.min(CORNER_R, Math.abs(x2 - x1) / 2, midY - y1, y2 - midY);
+  if (midY === undefined) midY = (y1 + y2) / 2;
+  const r = Math.min(CORNER_R, Math.abs(x2 - x1) / 2, Math.max(0, midY - y1), Math.max(0, y2 - midY));
   const sx = x2 > x1 ? 1 : -1;
   addPath(svg, `M ${x1} ${y1} L ${x1} ${midY - r} Q ${x1} ${midY} ${x1 + sx*r} ${midY} L ${x2 - sx*r} ${midY} Q ${x2} ${midY} ${x2} ${midY + r} L ${x2} ${y2}`);
 }
@@ -533,20 +533,23 @@ function drawConnectors(team) {
     depX.set(a, map);
   });
 
-  // ── Artists → games (individual elbow per artist-game pair, no merging) ──
-  // Compute spread arrival x at each game box top (sorted by artist L→R position)
-  const arrX = new Map(); // key `${artistName}-${gi}` → x
+  // ── Artists → games (individual elbow per pair, spread x + staggered midY) ──
+  const VSTEP = 18; // vertical separation between bend points within the same game
+  const arrX   = new Map(); // `${a}-${gi}` → arrival x
+  const pairMY = new Map(); // `${a}-${gi}` → midY
+
   team.games.forEach((game, gi) => {
-    const gp = gPos[gi];
+    const gp   = gPos[gi];
+    const y1   = aPos[0].bottom; // all artist boxes share the same bottom Y
+    const baseMidY = y1 + (gp.top - y1) / 2;
     const valid = game.artists.filter(a => artistIdx.has(a));
-    if (valid.length === 1) {
-      arrX.set(`${valid[0]}-${gi}`, gp.cx);
-    } else {
-      const sorted = [...valid].sort((a, b) => aPos[artistIdx.get(a)].cx - aPos[artistIdx.get(b)].cx);
-      sorted.forEach((a, k) => {
-        arrX.set(`${a}-${gi}`, gp.cx + (k / (sorted.length - 1) - 0.5) * 2 * SPREAD);
-      });
-    }
+    const N = valid.length;
+    const sorted = [...valid].sort((a, b) => aPos[artistIdx.get(a)].cx - aPos[artistIdx.get(b)].cx);
+    sorted.forEach((a, k) => {
+      const key = `${a}-${gi}`;
+      arrX.set(key,   N === 1 ? gp.cx : gp.cx + (k / (N - 1) - 0.5) * 2 * SPREAD);
+      pairMY.set(key, baseMidY + (k - (N - 1) / 2) * VSTEP);
+    });
   });
 
   team.games.forEach((game, gi) => {
@@ -554,14 +557,13 @@ function drawConnectors(team) {
     game.artists.forEach(a => {
       const ai = artistIdx.get(a);
       if (ai == null) return;
-      const x2 = arrX.get(`${a}-${gi}`);
-      addElbow(svg, depX.get(a).get(gi), aPos[ai].bottom, x2, gp.top);
-      addArrow(svg, x2, gp.top);
+      const key = `${a}-${gi}`;
+      addElbow(svg, depX.get(a).get(gi), aPos[ai].bottom, arrX.get(key), gp.top, pairMY.get(key));
+      addArrow(svg, arrX.get(key), gp.top);
     });
   });
 
-  // ── Games → clients (individual elbow per game, no T-bus merging) ──
-  // Compute spread arrival x at each client box top (sorted by game L→R position)
+  // ── Games → clients (individual elbow per game, spread x + staggered midY) ──
   const clientGames = new Map(); // ci → [gi, ...]
   team.games.forEach((game, gi) => {
     const ci = clientIdx.get(game.client);
@@ -570,26 +572,26 @@ function drawConnectors(team) {
     clientGames.get(ci).push(gi);
   });
 
-  const gameArrXClient = new Map(); // gi → arrival x at client top
+  const gcArrX = new Map(); // gi → arrival x at client top
+  const gcMidY = new Map(); // gi → midY
   clientGames.forEach((gIdxs, ci) => {
     const cp = cPos[ci];
-    if (gIdxs.length === 1) {
-      gameArrXClient.set(gIdxs[0], cp.cx);
-    } else {
-      const sorted = [...gIdxs].sort((a, b) => gPos[a].cx - gPos[b].cx);
-      sorted.forEach((gi, k) => {
-        gameArrXClient.set(gi, cp.cx + (k / (sorted.length - 1) - 0.5) * 2 * SPREAD);
-      });
-    }
+    const y1 = gPos[0].bottom; // all game boxes share the same bottom Y
+    const baseMidY = y1 + (cp.top - y1) / 2;
+    const N = gIdxs.length;
+    const sorted = [...gIdxs].sort((a, b) => gPos[a].cx - gPos[b].cx);
+    sorted.forEach((gi, k) => {
+      gcArrX.set(gi, N === 1 ? cp.cx : cp.cx + (k / (N - 1) - 0.5) * 2 * SPREAD);
+      gcMidY.set(gi, baseMidY + (k - (N - 1) / 2) * VSTEP);
+    });
   });
 
   team.games.forEach((game, gi) => {
     const ci = clientIdx.get(game.client);
     if (ci == null) return;
     const gp = gPos[gi];
-    const x2 = gameArrXClient.get(gi);
-    addElbow(svg, gp.cx, gp.bottom, x2, cPos[ci].top);
-    addArrow(svg, x2, cPos[ci].top);
+    addElbow(svg, gp.cx, gp.bottom, gcArrX.get(gi), cPos[ci].top, gcMidY.get(gi));
+    addArrow(svg, gcArrX.get(gi), cPos[ci].top);
   });
 }
 
