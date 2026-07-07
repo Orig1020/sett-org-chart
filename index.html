@@ -68,7 +68,7 @@
     }
 
     /* ── Node rows ───────────────────────────── */
-    .row-tl      { display: flex; justify-content: center; }
+    .row-tl      { display: flex; justify-content: center; align-items: center; gap: 40px; }
     .row-seniors { display: flex; justify-content: center; gap: 8px; margin-top: 44px; flex-wrap: nowrap; }
     .row-artists { display: flex; justify-content: center; gap: 8px; margin-top: 44px; flex-wrap: nowrap; }
     .row-games   { display: flex; justify-content: center; gap: 8px; margin-top: 56px; flex-wrap: nowrap; }
@@ -201,7 +201,7 @@ const orgData = [
     ]
   },
   {
-    id: "aleksandra", teamName: "Team 02", lead: "Aleksandra", highlights: ["Anna Subina"],
+    id: "aleksandra", teamName: "Team 02", lead: "Aleksandra", highlights: ["Anna Subina"], leadArtist: "Anna Subina",
     games: [
       { name: "Sort Puzzle Cash",    client: "Papaya",          artists: ["Anna Subina","Olga Kostiuchenko"] },
       { name: "Market Match!",       client: "Bold Games",       artists: ["Luka Katić"] },
@@ -376,7 +376,8 @@ function renderStats(data) {
 function renderTeam(team) {
   const tid = team.id;
 
-  const artists = uniqueArtists(team);
+  const allArtists = uniqueArtists(team);
+  const artists = allArtists.filter(a => a !== team.leadArtist);
   const clients = uniqueClients(team);
 
   const artistGameMap = new Map();
@@ -411,6 +412,7 @@ function renderTeam(team) {
               <div class="node-name">${team.lead}</div>
               <div class="node-role">Creative Team Lead</div>
             </div>
+            ${team.leadArtist ? `<div class="tree-node node-artist alt-blue" id="la-${tid}"><div class="node-name">${team.leadArtist}</div></div>` : ''}
           </div>
           ${seniorNodes ? `<div class="row-seniors">${seniorNodes}</div>` : ''}
           <div class="row-artists">${artistNodes}</div>
@@ -452,7 +454,7 @@ function ns(tag) { return document.createElementNS("http://www.w3.org/2000/svg",
 
 function ctr(el, base) {
   const r = el.getBoundingClientRect(), b = base.getBoundingClientRect();
-  return { cx: r.left - b.left + r.width / 2, top: r.top - b.top, bottom: r.bottom - b.top };
+  return { cx: r.left - b.left + r.width / 2, left: r.left - b.left, right: r.right - b.left, top: r.top - b.top, bottom: r.bottom - b.top };
 }
 
 function addPath(svg, d) {
@@ -505,11 +507,12 @@ function drawConnectors(team) {
   svg.setAttribute("width",  base.offsetWidth);
   svg.setAttribute("height", base.offsetHeight);
 
-  const artists = uniqueArtists(team);
+  const artists = uniqueArtists(team).filter(a => a !== team.leadArtist);
   const clients = uniqueClients(team);
-  if (!artists.length) return;
+  if (!artists.length && !team.leadArtist) return;
 
   const tl   = ctr(document.getElementById(`tl-${tid}`), base);
+  const la   = (() => { const el = document.getElementById(`la-${tid}`); return el ? ctr(el, base) : null; })();
   const aPos = artists.map((_, i) => ctr(document.getElementById(`a-${tid}-${i}`), base));
   const gPos = team.games.map((_, i) => ctr(document.getElementById(`g-${tid}-${i}`), base));
   const cPos = clients.map((_, i) => ctr(document.getElementById(`c-${tid}-${i}`), base));
@@ -528,13 +531,32 @@ function drawConnectors(team) {
     srPos.forEach(sp => { addPath(svg, `M ${sp.cx} ${srBusY} L ${sp.cx} ${sp.top}`); addArrow(svg, sp.cx, sp.top); });
   }
 
+  // ── TL ↔ Lead Artist (horizontal connector) ──
+  if (la) {
+    const midY = (tl.top + tl.bottom) / 2;
+    addPath(svg, `M ${tl.right} ${midY} L ${la.left} ${midY}`);
+  }
+
+  // ── Lead Artist → games ──
+  if (la && aPos.length) {
+    const laGapMidY = aPos[0].bottom + (gPos[0].top - aPos[0].bottom) / 2;
+    team.games.forEach((game, gi) => {
+      if (!game.artists.includes(team.leadArtist)) return;
+      const gp = gPos[gi];
+      addElbow(svg, la.cx, la.bottom, gp.cx, gp.top, laGapMidY);
+      addArrow(svg, gp.cx, gp.top);
+    });
+  }
+
   // ── TL → T-bus → artists ──
   // If seniors are present, start the artists bus below their boxes to avoid overlap
   const artistBusOriginY = srPos.length ? srPos[0].bottom : tl.bottom;
-  const tlBusY = artistBusOriginY + (aPos[0].top - artistBusOriginY) / 2;
-  addPath(svg, `M ${tl.cx} ${artistBusOriginY} L ${tl.cx} ${tlBusY}`);
-  if (aPos.length > 1) addPath(svg, `M ${aPos[0].cx} ${tlBusY} L ${aPos[aPos.length-1].cx} ${tlBusY}`);
-  aPos.forEach(ap => { addPath(svg, `M ${ap.cx} ${tlBusY} L ${ap.cx} ${ap.top}`); addArrow(svg, ap.cx, ap.top); });
+  if (aPos.length) {
+    const tlBusY = artistBusOriginY + (aPos[0].top - artistBusOriginY) / 2;
+    addPath(svg, `M ${tl.cx} ${artistBusOriginY} L ${tl.cx} ${tlBusY}`);
+    if (aPos.length > 1) addPath(svg, `M ${aPos[0].cx} ${tlBusY} L ${aPos[aPos.length-1].cx} ${tlBusY}`);
+    aPos.forEach(ap => { addPath(svg, `M ${ap.cx} ${tlBusY} L ${ap.cx} ${ap.top}`); addArrow(svg, ap.cx, ap.top); });
+  }
 
   // ── Compute spread departure x per artist per game ──
   // Artists with N games get N evenly-spaced departure points across their box bottom.
