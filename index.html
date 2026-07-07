@@ -69,6 +69,7 @@
 
     /* ── Node rows ───────────────────────────── */
     .row-tl      { display: flex; justify-content: center; }
+    .row-seniors { display: flex; justify-content: center; gap: 8px; margin-top: 44px; flex-wrap: nowrap; }
     .row-artists { display: flex; justify-content: center; gap: 8px; margin-top: 44px; flex-wrap: nowrap; }
     .row-games   { display: flex; justify-content: center; gap: 8px; margin-top: 56px; flex-wrap: nowrap; }
     .row-clients { display: flex; justify-content: center; gap: 8px; margin-top: 48px; flex-wrap: nowrap; }
@@ -190,9 +191,10 @@
 const orgData = [
   {
     id: "dusan", teamName: "Team 01", lead: "Dusan",
+    seniors: ["Aleksandr Sotnikov", "Vadim Bogoratov"],
     games: [
       { name: "Royal Match", client: "Dream Games",
-        artists: ["Vadim Bogoratov","Carlos Monteiro","Aleksa Spasic","Vladimir Vujasinovic",
+        artists: ["Carlos Monteiro","Aleksa Spasic","Vladimir Vujasinovic",
                   "Mateja Popović","Milos Milovac","Ivana Ilic","Isidora Jancic",
                   "Igor Cheltsov","Luka Brankovic","Hike Gevorgyan","Alina Araqelyan","Vahram Altunyan"] }
     ]
@@ -392,6 +394,10 @@ function renderTeam(team) {
     `<div class="tree-node node-client" id="c-${tid}-${i}"><div class="node-name">${c}</div></div>`
   ).join("");
 
+  const seniorNodes = (team.seniors || []).map((s, i) =>
+    `<div class="tree-node node-artist" id="sr-${tid}-${i}"><div class="node-name">${s}</div></div>`
+  ).join("");
+
   return `
     <section class="team-section" id="team-${tid}">
       <div class="team-label">${team.teamName}</div>
@@ -403,6 +409,7 @@ function renderTeam(team) {
               <div class="node-role">Creative Team Lead</div>
             </div>
           </div>
+          ${seniorNodes ? `<div class="row-seniors">${seniorNodes}</div>` : ''}
           <div class="row-artists">${artistNodes}</div>
           <div class="row-games">${gameNodes}</div>
           <div class="row-clients">${clientNodes}</div>
@@ -505,6 +512,18 @@ function drawConnectors(team) {
   const cPos = clients.map((_, i) => ctr(document.getElementById(`c-${tid}-${i}`), base));
   const artistIdx = new Map(artists.map((a, i) => [a, i]));
   const clientIdx = new Map(clients.map((c, i) => [c, i]));
+
+  // ── TL → seniors (if any) ──
+  const srPos = (team.seniors || []).map((_, i) => {
+    const el = document.getElementById(`sr-${tid}-${i}`);
+    return el ? ctr(el, base) : null;
+  }).filter(Boolean);
+  if (srPos.length) {
+    const srBusY = tl.bottom + (srPos[0].top - tl.bottom) / 2;
+    addPath(svg, `M ${tl.cx} ${tl.bottom} L ${tl.cx} ${srBusY}`);
+    if (srPos.length > 1) addPath(svg, `M ${srPos[0].cx} ${srBusY} L ${srPos[srPos.length-1].cx} ${srBusY}`);
+    srPos.forEach(sp => { addPath(svg, `M ${sp.cx} ${srBusY} L ${sp.cx} ${sp.top}`); addArrow(svg, sp.cx, sp.top); });
+  }
 
   // ── TL → T-bus → artists ──
   const tlBusY = tl.bottom + (aPos[0].top - tl.bottom) / 2;
