@@ -292,7 +292,7 @@ const orgData = [
     ]
   },
   {
-    id: "yurii", teamName: "Team 11", lead: "Yurii",
+    id: "yurii", teamName: "Team 11", lead: "Yurii", highlights: ["Maksym Cheprasov"],
     games: [
       { name: "Domino Dreams",    client: "SuperPlay", artists: ["Maksym Cheprasov","Gustavo O. de Carvalho"] },
       { name: "Disney Solitaire", client: "SuperPlay", artists: ["Fyodor Olevinski","Nenad Jerinkic"] },
@@ -302,7 +302,7 @@ const orgData = [
     ]
   },
   {
-    id: "isidora", teamName: "Team 12", lead: "Isidora",
+    id: "isidora", teamName: "Team 12", lead: "Isidora", highlights: ["Gigih Sukoyo"],
     games: [
       { name: "Merge Dragon",  client: "Zynga",    artists: ["Gigih Sukoyo","Fernando V. Zamorano","Kirill Laptev"] },
       { name: "Sherlock",      client: "G5",       artists: ["Hana Filipovic"] },
@@ -532,7 +532,7 @@ function drawConnectors(team) {
   // If seniors are present, start the artists bus below their boxes to avoid overlap
   const artistBusOriginY = srPos.length ? srPos[0].bottom : tl.bottom;
   const tlBusY = artistBusOriginY + (aPos[0].top - artistBusOriginY) / 2;
-  addPath(svg, `M ${tl.cx} ${tl.bottom} L ${tl.cx} ${tlBusY}`);
+  addPath(svg, `M ${tl.cx} ${artistBusOriginY} L ${tl.cx} ${tlBusY}`);
   if (aPos.length > 1) addPath(svg, `M ${aPos[0].cx} ${tlBusY} L ${aPos[aPos.length-1].cx} ${tlBusY}`);
   aPos.forEach(ap => { addPath(svg, `M ${ap.cx} ${tlBusY} L ${ap.cx} ${ap.top}`); addArrow(svg, ap.cx, ap.top); });
 
