@@ -428,19 +428,15 @@ function renderAll(data) {
 // ──────────────────────────────────────────────────────────
 //  SVG CONNECTORS
 // ──────────────────────────────────────────────────────────
-const LINE_COLOR = "#CBD5E1";
-const LINE_W     = "2";
-const ARR        = 6;
+const LINE_COLOR = "#B0BEC5";
+const LINE_W     = "1.5";
+const CORNER_R   = 8;
 
 function ns(tag) { return document.createElementNS("http://www.w3.org/2000/svg", tag); }
 
 function ctr(el, base) {
   const r = el.getBoundingClientRect(), b = base.getBoundingClientRect();
-  return {
-    cx:     r.left - b.left + r.width  / 2,
-    top:    r.top  - b.top,
-    bottom: r.bottom - b.top,
-  };
+  return { cx: r.left - b.left + r.width / 2, top: r.top - b.top, bottom: r.bottom - b.top };
 }
 
 function addPath(svg, d) {
@@ -450,14 +446,40 @@ function addPath(svg, d) {
   p.setAttribute("stroke-width", LINE_W);
   p.setAttribute("fill", "none");
   p.setAttribute("stroke-linecap", "round");
+  p.setAttribute("stroke-linejoin", "round");
   svg.appendChild(p);
 }
 
+// Open chevron arrowhead (matches Figma ARROW_LINES style)
 function addArrow(svg, x, y) {
-  const poly = ns("polygon");
-  poly.setAttribute("points", `${x},${y} ${x - ARR/2},${y - ARR} ${x + ARR/2},${y - ARR}`);
-  poly.setAttribute("fill", LINE_COLOR);
-  svg.appendChild(poly);
+  const w = 7, h = 6;
+  const pl = ns("polyline");
+  pl.setAttribute("points", `${x - w},${y - h} ${x},${y} ${x + w},${y - h}`);
+  pl.setAttribute("stroke", LINE_COLOR);
+  pl.setAttribute("stroke-width", LINE_W);
+  pl.setAttribute("fill", "none");
+  pl.setAttribute("stroke-linecap", "round");
+  pl.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(pl);
+}
+
+// Orthogonal elbow: source bottom → midY → target top, with rounded corners
+function addElbow(svg, x1, y1, x2, y2) {
+  if (Math.abs(x1 - x2) < 1) { addPath(svg, `M ${x1} ${y1} L ${x2} ${y2}`); return; }
+  const midY = (y1 + y2) / 2;
+  const r = Math.min(CORNER_R, Math.abs(x2 - x1) / 2, midY - y1, y2 - midY);
+  const sx = x2 > x1 ? 1 : -1;
+  addPath(svg, `M ${x1} ${y1} L ${x1} ${midY - r} Q ${x1} ${midY} ${x1 + sx*r} ${midY} L ${x2 - sx*r} ${midY} Q ${x2} ${midY} ${x2} ${midY + r} L ${x2} ${y2}`);
+}
+
+// Orthogonal T-bus: multiple sources drop to a shared bus, then connect to one target
+function addBus(svg, sources, tx, ty1, ty2) {
+  const busY = ty1 + (ty2 - ty1) / 2;
+  sources.forEach(sx => addPath(svg, `M ${sx} ${ty1} L ${sx} ${busY}`));
+  const minX = Math.min(...sources, tx);
+  const maxX = Math.max(...sources, tx);
+  addPath(svg, `M ${minX} ${busY} L ${maxX} ${busY}`);
+  addPath(svg, `M ${tx} ${busY} L ${tx} ${ty2}`);
 }
 
 function drawConnectors(team) {
@@ -479,29 +501,44 @@ function drawConnectors(team) {
   const clientIdx = new Map(clients.map((c, i) => [c, i]));
 
   // ── TL → T-bus → artists ──
-  const busY = tl.bottom + (aPos[0].top - tl.bottom) / 2;
-  addPath(svg, `M ${tl.cx} ${tl.bottom} L ${tl.cx} ${busY}`);
-  if (aPos.length > 1) addPath(svg, `M ${aPos[0].cx} ${busY} L ${aPos[aPos.length-1].cx} ${busY}`);
-  aPos.forEach(ap => { addPath(svg, `M ${ap.cx} ${busY} L ${ap.cx} ${ap.top}`); addArrow(svg, ap.cx, ap.top); });
+  const tlBusY = tl.bottom + (aPos[0].top - tl.bottom) / 2;
+  addPath(svg, `M ${tl.cx} ${tl.bottom} L ${tl.cx} ${tlBusY}`);
+  if (aPos.length > 1) addPath(svg, `M ${aPos[0].cx} ${tlBusY} L ${aPos[aPos.length-1].cx} ${tlBusY}`);
+  aPos.forEach(ap => { addPath(svg, `M ${ap.cx} ${tlBusY} L ${ap.cx} ${ap.top}`); addArrow(svg, ap.cx, ap.top); });
 
-  // ── Artists → games (one line per artist-game pair; one arrowhead per game) ──
+  // ── Artists → games ──
+  // Single artist: elbow. Multiple artists sharing a game: reverse T-bus then drop.
   team.games.forEach((game, gi) => {
-    const gp = gPos[gi];
-    game.artists.forEach(a => {
-      const ai = artistIdx.get(a);
-      if (ai == null) return;
-      addPath(svg, `M ${aPos[ai].cx} ${aPos[ai].bottom} L ${gp.cx} ${gp.top}`);
-    });
+    const gp  = gPos[gi];
+    const pts = game.artists.map(a => aPos[artistIdx.get(a)]).filter(Boolean);
+    if (!pts.length) return;
+    if (pts.length === 1) {
+      addElbow(svg, pts[0].cx, pts[0].bottom, gp.cx, gp.top);
+    } else {
+      addBus(svg, pts.map(p => p.cx), gp.cx, pts[0].bottom, gp.top);
+    }
     addArrow(svg, gp.cx, gp.top);
   });
 
-  // ── Games → clients (one line per game; one arrowhead per client) ──
+  // ── Games → clients ──
+  // Group games by client, then same pattern.
+  const byClient = new Map();
   team.games.forEach((game, gi) => {
     const ci = clientIdx.get(game.client);
     if (ci == null) return;
-    addPath(svg, `M ${gPos[gi].cx} ${gPos[gi].bottom} L ${cPos[ci].cx} ${cPos[ci].top}`);
+    if (!byClient.has(ci)) byClient.set(ci, []);
+    byClient.get(ci).push(gi);
   });
-  cPos.forEach(cp => addArrow(svg, cp.cx, cp.top));
+  byClient.forEach((gIdxs, ci) => {
+    const cp  = cPos[ci];
+    const pts = gIdxs.map(gi => gPos[gi]);
+    if (pts.length === 1) {
+      addElbow(svg, pts[0].cx, pts[0].bottom, cp.cx, cp.top);
+    } else {
+      addBus(svg, pts.map(p => p.cx), cp.cx, pts[0].bottom, cp.top);
+    }
+    addArrow(svg, cp.cx, cp.top);
+  });
 }
 
 // ──────────────────────────────────────────────────────────
