@@ -553,7 +553,8 @@ function drawConnectors(team) {
     if (!sources.length) return;
 
     const baseBusY = artBottom + (gp.top - artBottom) / 2;
-    const busY = baseBusY + (gi - (numGames - 1) / 2) * GAME_VSTEP;
+    const rawBusY  = baseBusY + (gi - (numGames - 1) / 2) * GAME_VSTEP;
+    const busY     = Math.max(artBottom + 8, Math.min(gp.top - 8, rawBusY));
 
     if (sources.length === 1) {
       addElbow(svg, sources[0].x, sources[0].bottom, gp.cx, gp.top, busY);
