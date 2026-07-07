@@ -560,23 +560,36 @@ function drawConnectors(team) {
     });
   });
 
-  // ── Games → clients ──
-  const byClient = new Map();
+  // ── Games → clients (individual elbow per game, no T-bus merging) ──
+  // Compute spread arrival x at each client box top (sorted by game L→R position)
+  const clientGames = new Map(); // ci → [gi, ...]
   team.games.forEach((game, gi) => {
     const ci = clientIdx.get(game.client);
     if (ci == null) return;
-    if (!byClient.has(ci)) byClient.set(ci, []);
-    byClient.get(ci).push(gi);
+    if (!clientGames.has(ci)) clientGames.set(ci, []);
+    clientGames.get(ci).push(gi);
   });
-  byClient.forEach((gIdxs, ci) => {
-    const cp  = cPos[ci];
-    const pts = gIdxs.map(gi => gPos[gi]);
-    if (pts.length === 1) {
-      addElbow(svg, pts[0].cx, pts[0].bottom, cp.cx, cp.top);
+
+  const gameArrXClient = new Map(); // gi → arrival x at client top
+  clientGames.forEach((gIdxs, ci) => {
+    const cp = cPos[ci];
+    if (gIdxs.length === 1) {
+      gameArrXClient.set(gIdxs[0], cp.cx);
     } else {
-      addBus(svg, pts.map(p => p.cx), cp.cx, pts[0].bottom, cp.top);
+      const sorted = [...gIdxs].sort((a, b) => gPos[a].cx - gPos[b].cx);
+      sorted.forEach((gi, k) => {
+        gameArrXClient.set(gi, cp.cx + (k / (sorted.length - 1) - 0.5) * 2 * SPREAD);
+      });
     }
-    addArrow(svg, cp.cx, cp.top);
+  });
+
+  team.games.forEach((game, gi) => {
+    const ci = clientIdx.get(game.client);
+    if (ci == null) return;
+    const gp = gPos[gi];
+    const x2 = gameArrXClient.get(gi);
+    addElbow(svg, gp.cx, gp.bottom, x2, cPos[ci].top);
+    addArrow(svg, x2, cPos[ci].top);
   });
 }
 
