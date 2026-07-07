@@ -96,6 +96,7 @@
       width: 120px; min-height: 46px; border-radius: 10px;
       box-shadow: 0 1px 3px rgba(0,0,0,.07);
     }
+    .node-artist.game-sep { margin-left: 24px; }
     .node-artist .node-name { font-size: 10.5px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; white-space: normal; word-break: break-word; }
 
     /* Game */
@@ -375,9 +376,13 @@ function renderTeam(team) {
   const artists = uniqueArtists(team);
   const clients = uniqueClients(team);
 
-  const artistNodes = artists.map((a, i) =>
-    `<div class="tree-node node-artist" id="a-${tid}-${i}"><div class="node-name">${a}</div></div>`
-  ).join("");
+  const artistGameMap = new Map();
+  team.games.forEach((game, gi) => game.artists.forEach(a => { if (!artistGameMap.has(a)) artistGameMap.set(a, gi); }));
+
+  const artistNodes = artists.map((a, i) => {
+    const isSep = i > 0 && artistGameMap.get(a) !== artistGameMap.get(artists[i - 1]);
+    return `<div class="tree-node node-artist${isSep ? ' game-sep' : ''}" id="a-${tid}-${i}"><div class="node-name">${a}</div></div>`;
+  }).join("");
 
   const gameNodes = team.games.map((g, i) =>
     `<div class="tree-node node-game" id="g-${tid}-${i}"><div class="node-name">${g.name}</div></div>`
