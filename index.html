@@ -544,13 +544,15 @@ function drawConnectors(team) {
       ? aPos[0].bottom + (gPos[0].top - aPos[0].bottom) / 2
       : (la.bottom + gPos[0].top) / 2;
     const r = CORNER_R;
+    const laMidY = (la.top + la.bottom) / 2;
     team.games.forEach((game, gi) => {
       if (!game.artists.includes(team.leadArtist)) return;
       const gp = gPos[gi];
+      // Start from la.left at the same height as the TL→LA connector so lines align
       addPath(svg,
-        `M ${la.cx} ${la.bottom}` +
-        ` L ${leftEdge + r} ${la.bottom}` +
-        ` Q ${leftEdge} ${la.bottom} ${leftEdge} ${la.bottom + r}` +
+        `M ${la.left} ${laMidY}` +
+        ` L ${leftEdge + r} ${laMidY}` +
+        ` Q ${leftEdge} ${laMidY} ${leftEdge} ${laMidY + r}` +
         ` L ${leftEdge} ${gapY - r}` +
         ` Q ${leftEdge} ${gapY} ${leftEdge + r} ${gapY}` +
         ` L ${gp.cx - r} ${gapY}` +
