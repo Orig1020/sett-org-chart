@@ -115,6 +115,38 @@
     }
     .node-client .node-name { font-size: 10px; font-weight: 600; letter-spacing: .01em; line-height: 1.3; white-space: normal; word-break: break-word; }
 
+    /* ── Pod sections ────────────────────────── */
+    .pod-section {
+      margin-bottom: 40px;
+      border-radius: 20px;
+      border: 1.5px solid #E2E8F0;
+      background: #fff;
+      box-shadow: 0 4px 28px rgba(0,0,0,.07);
+    }
+    .pod-header {
+      display: flex; align-items: center; gap: 20px;
+      padding: 22px 36px;
+      background: #FAFAFA;
+      border-bottom: 1.5px solid #E2E8F0;
+      border-radius: 20px 20px 0 0;
+    }
+    .pod-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .pod-meta { flex: 1; }
+    .pod-role {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .1em; color: #94A3B8; display: block; margin-bottom: 3px;
+    }
+    .pod-name { font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
+    .pod-badge {
+      padding: 5px 14px; border-radius: 100px;
+      font-size: 12px; font-weight: 600;
+      color: #fff;
+    }
+    .pod-teams { padding: 36px 36px 4px; }
+    .pod-teams .team-section { margin-bottom: 0; padding-bottom: 52px; }
+    .pod-teams .team-section:last-child { padding-bottom: 8px; }
+    .pod-teams .team-section + .team-section { padding-top: 52px; border-top: 1.5px dashed #E5E7EB; }
+
     /* ── Footer ──────────────────────────────── */
     .site-footer {
       border-top: 1px solid #E2E8F0; padding: 20px 40px;
@@ -283,6 +315,15 @@ const orgData = [
 ];
 
 // ──────────────────────────────────────────────────────────
+//  PODS
+// ──────────────────────────────────────────────────────────
+const pods = [
+  { id: "nadav",  manager: "Nadav",  color: "#0EA5E9", teamIds: ["dusan","aleksandra"] },
+  { id: "eden",   manager: "Eden",   color: "#10B981", teamIds: ["natalya","mira","oksana","illia","kris"] },
+  { id: "yogev",  manager: "Yogev",  color: "#8B5CF6", teamIds: ["iryna","vlada","denys","yurii","isidora","mariam"] },
+];
+
+// ──────────────────────────────────────────────────────────
 //  HELPERS  — unique artists / clients per team
 // ──────────────────────────────────────────────────────────
 function uniqueArtists(team) {
@@ -304,7 +345,7 @@ function computeStats(data) {
   const artists = new Set(data.flatMap(t => t.games.flatMap(g => g.artists)));
   const games   = new Set(data.flatMap(t => t.games.map(g => g.name)));
   const clients = new Set(data.flatMap(t => t.games.map(g => g.client)).filter(c => c !== '—'));
-  return { teams: data.length, artists: artists.size, games: games.size, clients: clients.size };
+  return { pods: pods.length, teams: data.length, artists: artists.size, games: games.size, clients: clients.size };
 }
 
 // ──────────────────────────────────────────────────────────
@@ -313,8 +354,9 @@ function computeStats(data) {
 function renderStats(data) {
   const s = computeStats(data);
   document.getElementById("header-sub").textContent =
-    `${s.teams} Teams · ${s.artists} Artists · ${s.games} Games · ${s.clients} Clients`;
+    `${s.pods} Pods · ${s.teams} Teams · ${s.artists} Artists · ${s.games} Games · ${s.clients} Clients`;
   document.getElementById("stats-inner").innerHTML = [
+    ["Pods",    s.pods],
     ["Teams",   s.teams],
     ["Artists", s.artists],
     ["Games",   s.games],
@@ -365,7 +407,22 @@ function renderTeam(team) {
 
 function renderAll(data) {
   renderStats(data);
-  document.getElementById("main-content").innerHTML = data.map(renderTeam).join("");
+  const teamMap = new Map(data.map(t => [t.id, t]));
+  document.getElementById("main-content").innerHTML = pods.map(pod => {
+    const teams = pod.teamIds.map(id => teamMap.get(id)).filter(Boolean);
+    return `
+      <div class="pod-section">
+        <div class="pod-header">
+          <div class="pod-dot" style="background:${pod.color}"></div>
+          <div class="pod-meta">
+            <span class="pod-role">Creative Group Manager</span>
+            <div class="pod-name" style="color:${pod.color}">${pod.manager}</div>
+          </div>
+          <span class="pod-badge" style="background:${pod.color}">${teams.length} Team${teams.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="pod-teams">${teams.map(renderTeam).join("")}</div>
+      </div>`;
+  }).join("");
 }
 
 // ──────────────────────────────────────────────────────────
