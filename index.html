@@ -526,7 +526,9 @@ function drawConnectors(team) {
   }
 
   // ── TL → T-bus → artists ──
-  const tlBusY = tl.bottom + (aPos[0].top - tl.bottom) / 2;
+  // If seniors are present, start the artists bus below their boxes to avoid overlap
+  const artistBusOriginY = srPos.length ? srPos[0].bottom : tl.bottom;
+  const tlBusY = artistBusOriginY + (aPos[0].top - artistBusOriginY) / 2;
   addPath(svg, `M ${tl.cx} ${tl.bottom} L ${tl.cx} ${tlBusY}`);
   if (aPos.length > 1) addPath(svg, `M ${aPos[0].cx} ${tlBusY} L ${aPos[aPos.length-1].cx} ${tlBusY}`);
   aPos.forEach(ap => { addPath(svg, `M ${ap.cx} ${tlBusY} L ${ap.cx} ${ap.top}`); addArrow(svg, ap.cx, ap.top); });
