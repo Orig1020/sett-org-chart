@@ -98,6 +98,7 @@
       box-shadow: 0 1px 3px rgba(0,0,0,.07);
     }
     .node-artist.game-sep { margin-left: 24px; }
+    .node-artist.alt-blue  { background: #E0F2FE; color: #0369A1; }
     .node-artist .node-name { font-size: 10.5px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; white-space: normal; word-break: break-word; }
 
     /* Game */
@@ -231,7 +232,7 @@ const orgData = [
     ]
   },
   {
-    id: "oksana", teamName: "Team 05", lead: "Oksana",
+    id: "oksana", teamName: "Team 05", lead: "Oksana", highlights: ["Aliaksei Dziashchenia"],
     games: [
       { name: "Animals & Coins", client: "Innplay Labs", artists: ["Aliaksei Dziashchenia","Oleksandr Hanenko"] },
       { name: "Sled Surfer",     client: "CrazyLabs",    artists: ["Oleksii Chyzh","Kirill Kotelyuk","Emmanuel Akinleye"] },
@@ -381,9 +382,11 @@ function renderTeam(team) {
   const artistGameMap = new Map();
   team.games.forEach((game, gi) => game.artists.forEach(a => { if (!artistGameMap.has(a)) artistGameMap.set(a, gi); }));
 
+  const highlightSet = new Set(team.highlights || []);
   const artistNodes = artists.map((a, i) => {
     const isSep = i > 0 && artistGameMap.get(a) !== artistGameMap.get(artists[i - 1]);
-    return `<div class="tree-node node-artist${isSep ? ' game-sep' : ''}" id="a-${tid}-${i}"><div class="node-name">${a}</div></div>`;
+    const extra = (isSep ? ' game-sep' : '') + (highlightSet.has(a) ? ' alt-blue' : '');
+    return `<div class="tree-node node-artist${extra}" id="a-${tid}-${i}"><div class="node-name">${a}</div></div>`;
   }).join("");
 
   const gameNodes = team.games.map((g, i) =>
