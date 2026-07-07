@@ -192,7 +192,7 @@
 const orgData = [
   {
     id: "dusan", teamName: "Team 01", lead: "Dusan",
-    seniors: ["Aleksandr Sotnikov", "Vadim Bogoratov"],
+    seniors: ["Aleksandr Sotnikov", "Vadim Bogoratov"], highlights: ["Aleksandr Sotnikov", "Vadim Bogoratov"],
     games: [
       { name: "Royal Match", client: "Dream Games",
         artists: ["Carlos Monteiro","Aleksa Spasic","Vladimir Vujasinovic",
@@ -201,7 +201,7 @@ const orgData = [
     ]
   },
   {
-    id: "aleksandra", teamName: "Team 02", lead: "Aleksandra",
+    id: "aleksandra", teamName: "Team 02", lead: "Aleksandra", highlights: ["Anna Subina"],
     games: [
       { name: "Sort Puzzle Cash",    client: "Papaya",          artists: ["Anna Subina","Olga Kostiuchenko"] },
       { name: "Market Match!",       client: "Bold Games",       artists: ["Luka Katić"] },
@@ -211,7 +211,7 @@ const orgData = [
     ]
   },
   {
-    id: "natalya", teamName: "Team 03", lead: "Natalya",
+    id: "natalya", teamName: "Team 03", lead: "Natalya", highlights: ["Stevan Stanisic"],
     games: [
       { name: "Screw Masters",   client: "Supersonic", artists: ["Stevan Stanisic","Miroslav Simic"] },
       { name: "Car Screw Escape",client: "Supersonic", artists: ["Stevan Stanisic"] },
@@ -221,7 +221,7 @@ const orgData = [
     ]
   },
   {
-    id: "mira", teamName: "Team 04", lead: "Mira",
+    id: "mira", teamName: "Team 04", lead: "Mira", highlights: ["Uladzislau Khalimonenka"],
     games: [
       { name: "Bingo Blitz",        client: "Playtika",       artists: ["Uladzislau Khalimonenka"] },
       { name: "Garden Joy",          client: "Bgames",         artists: ["Anna Kazantseva"] },
@@ -242,7 +242,7 @@ const orgData = [
     ]
   },
   {
-    id: "illia", teamName: "Team 06", lead: "Illia",
+    id: "illia", teamName: "Team 06", lead: "Illia", highlights: ["Vitaliy Pakholchenko"],
     games: [
       { name: "Heroes vs. Hordes", client: "Swift Games",  artists: ["Vitaliy Pakholchenko","Anatoliy Petrov"] },
       { name: "We Are Warriors",   client: "Lessmore",     artists: ["Andres Moriel Alcaide","Harry Dominic"] },
@@ -251,7 +251,7 @@ const orgData = [
     ]
   },
   {
-    id: "kris", teamName: "Team 07", lead: "Kris",
+    id: "kris", teamName: "Team 07", lead: "Kris", seniors: ["Konrad Grochulski"], highlights: ["Konrad Grochulski"],
     games: [
       { name: "Klondike Adventures", client: "Vizor Games", artists: ["Shaghig Jouharian","Pavlo Kharchenko"] },
       { name: "EatVenture",          client: "Lessmore",    artists: ["Mark Edward U.","George Pirtskhalava"] },
@@ -260,7 +260,7 @@ const orgData = [
     ]
   },
   {
-    id: "iryna", teamName: "Team 08", lead: "Iryna",
+    id: "iryna", teamName: "Team 08", lead: "Iryna", highlights: ["Ruslan Babaev"],
     games: [
       { name: "House of Fun",   client: "Playtika",    artists: ["Ruslan Babaev"] },
       { name: "Slotomania",     client: "Playtika",    artists: ["Viacheslav Borshch"] },
@@ -271,7 +271,7 @@ const orgData = [
     ]
   },
   {
-    id: "vlada", teamName: "Team 09", lead: "Vlada",
+    id: "vlada", teamName: "Team 09", lead: "Vlada", highlights: ["Vadym Ostapenko"],
     games: [
       { name: "Sunflower Slots",    client: "Sunflower",   artists: ["Vadym Ostapenko","Micheal Tekle"] },
       { name: "Free Cash",          client: "Almedia",     artists: ["Ivan Milosavljevic","Karryl Dale Torres"] },
@@ -282,7 +282,7 @@ const orgData = [
     ]
   },
   {
-    id: "denys", teamName: "Team 10", lead: "Denys",
+    id: "denys", teamName: "Team 10", lead: "Denys", highlights: ["Ori Ran"],
     games: [
       { name: "Bingo Blitz",    client: "Playtika", artists: ["Ori Ran","Franz Alcantara Anonuevo"] },
       { name: "Bubble Cash",    client: "Papaya",   artists: ["Lord Mark Brazil Espina"] },
@@ -310,7 +310,7 @@ const orgData = [
     ]
   },
   {
-    id: "mariam", teamName: "Team 13", lead: "Mariam",
+    id: "mariam", teamName: "Team 13", lead: "Mariam", seniors: ["Bogdan Chernetskii"], highlights: ["Bogdan Chernetskii"],
     games: [
       { name: "Tetris Block Party", client: "PlayStudios", artists: ["Franklin Fache","Mile Eror"] },
       { name: "Jewelscapes",        client: "TikGames",    artists: ["Mile Eror","Tomasz Wenne","Petar Gyulev","Maksim Ivanov","Vidan Tomic"] },
@@ -398,7 +398,7 @@ function renderTeam(team) {
   ).join("");
 
   const seniorNodes = (team.seniors || []).map((s, i) =>
-    `<div class="tree-node node-artist" id="sr-${tid}-${i}"><div class="node-name">${s}</div></div>`
+    `<div class="tree-node node-artist${highlightSet.has(s) ? ' alt-blue' : ''}" id="sr-${tid}-${i}"><div class="node-name">${s}</div></div>`
   ).join("");
 
   return `
