@@ -538,37 +538,30 @@ function drawConnectors(team) {
     depX.set(a, map);
   });
 
-  // ── Artists → games (individual elbow per pair, spread x + staggered midY) ──
-  const VSTEP = 18; // vertical separation between bend points within the same game
-  const arrX   = new Map(); // `${a}-${gi}` → arrival x
-  const pairMY = new Map(); // `${a}-${gi}` → midY
-
-  team.games.forEach((game, gi) => {
-    const gp   = gPos[gi];
-    const y1   = aPos[0].bottom; // all artist boxes share the same bottom Y
-    const baseMidY = y1 + (gp.top - y1) / 2;
-    const valid = game.artists.filter(a => artistIdx.has(a));
-    const N = valid.length;
-    const sorted = [...valid].sort((a, b) => aPos[artistIdx.get(a)].cx - aPos[artistIdx.get(b)].cx);
-    sorted.forEach((a, k) => {
-      const key = `${a}-${gi}`;
-      arrX.set(key,   N === 1 ? gp.cx : gp.cx + (k / (N - 1) - 0.5) * 2 * SPREAD);
-      pairMY.set(key, baseMidY + (k - (N - 1) / 2) * VSTEP);
-    });
-  });
-
+  // ── Artists → games (T-bus per game: multiple artists fan into one drop) ──
   team.games.forEach((game, gi) => {
     const gp = gPos[gi];
-    game.artists.forEach(a => {
+    const sources = game.artists.map(a => {
       const ai = artistIdx.get(a);
-      if (ai == null) return;
-      const key = `${a}-${gi}`;
-      addElbow(svg, depX.get(a).get(gi), aPos[ai].bottom, arrX.get(key), gp.top, pairMY.get(key));
-      addArrow(svg, arrX.get(key), gp.top);
-    });
+      if (ai == null) return null;
+      return { x: depX.get(a).get(gi), bottom: aPos[ai].bottom };
+    }).filter(Boolean);
+    if (!sources.length) return;
+
+    if (sources.length === 1) {
+      addElbow(svg, sources[0].x, sources[0].bottom, gp.cx, gp.top);
+    } else {
+      const busY = sources[0].bottom + (gp.top - sources[0].bottom) / 2;
+      sources.forEach(s => addPath(svg, `M ${s.x} ${s.bottom} L ${s.x} ${busY}`));
+      const xs = sources.map(s => s.x);
+      addPath(svg, `M ${Math.min(...xs)} ${busY} L ${Math.max(...xs)} ${busY}`);
+      addPath(svg, `M ${gp.cx} ${busY} L ${gp.cx} ${gp.top}`);
+    }
+    addArrow(svg, gp.cx, gp.top);
   });
 
   // ── Games → clients (individual elbow per game, spread x + staggered midY) ──
+  const VSTEP = 18;
   const clientGames = new Map(); // ci → [gi, ...]
   team.games.forEach((game, gi) => {
     const ci = clientIdx.get(game.client);
