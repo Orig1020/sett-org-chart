@@ -124,20 +124,22 @@
       box-shadow: 0 4px 28px rgba(0,0,0,.07);
     }
     .pod-header {
-      display: flex; align-items: center; gap: 20px;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
       padding: 22px 36px;
       background: #FAFAFA;
       border-bottom: 1.5px solid #E2E8F0;
       border-radius: 20px 20px 0 0;
+      position: relative;
     }
     .pod-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-    .pod-meta { flex: 1; }
+    .pod-meta { text-align: center; }
     .pod-role {
       font-size: 10px; font-weight: 600; text-transform: uppercase;
       letter-spacing: .1em; color: #94A3B8; display: block; margin-bottom: 3px;
     }
     .pod-name { font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
     .pod-badge {
+      position: absolute; right: 36px;
       padding: 5px 14px; border-radius: 100px;
       font-size: 12px; font-weight: 600;
       color: #fff;
