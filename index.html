@@ -538,7 +538,11 @@ function drawConnectors(team) {
     depX.set(a, map);
   });
 
-  // ── Artists → games (T-bus per game: multiple artists fan into one drop) ──
+  // ── Artists → games (T-bus per game, each game gets its own busY level) ──
+  const artBottom  = aPos[0].bottom;
+  const GAME_VSTEP = 10;
+  const numGames   = team.games.length;
+
   team.games.forEach((game, gi) => {
     const gp = gPos[gi];
     const sources = game.artists.map(a => {
@@ -548,12 +552,14 @@ function drawConnectors(team) {
     }).filter(Boolean);
     if (!sources.length) return;
 
+    const baseBusY = artBottom + (gp.top - artBottom) / 2;
+    const busY = baseBusY + (gi - (numGames - 1) / 2) * GAME_VSTEP;
+
     if (sources.length === 1) {
-      addElbow(svg, sources[0].x, sources[0].bottom, gp.cx, gp.top);
+      addElbow(svg, sources[0].x, sources[0].bottom, gp.cx, gp.top, busY);
     } else {
-      const busY = sources[0].bottom + (gp.top - sources[0].bottom) / 2;
       sources.forEach(s => addPath(svg, `M ${s.x} ${s.bottom} L ${s.x} ${busY}`));
-      const xs = sources.map(s => s.x);
+      const xs = [...sources.map(s => s.x), gp.cx];
       addPath(svg, `M ${Math.min(...xs)} ${busY} L ${Math.max(...xs)} ${busY}`);
       addPath(svg, `M ${gp.cx} ${busY} L ${gp.cx} ${gp.top}`);
     }
