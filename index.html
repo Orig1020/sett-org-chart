@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Department Org Chart — Week 31</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #ECEEF0;
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color: #1C1917;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    .site-header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #E2E8F0;
+    }
+    .header-inner {
+      padding: 0 40px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    }
+    .header-brand { display: flex; align-items: baseline; gap: 12px; }
+    .header-brand h1 { font-size: 15px; font-weight: 700; letter-spacing: -.02em; }
+    .header-brand p  { font-size: 12px; color: #94A3B8; }
+    .week-pill {
+      background: #F59E0B; color: #fff;
+      padding: 6px 16px; border-radius: 100px;
+      font-size: 13px; font-weight: 700; letter-spacing: -.01em;
+    }
+
+    /* ── Stats bar ───────────────────────────── */
+    .stats-bar { background: #fff; border-bottom: 1px solid #E2E8F0; }
+    .stats-inner { display: flex; padding: 0 40px; }
+    .stat-item {
+      padding: 14px 28px 14px 0; margin-right: 28px;
+      border-right: 1px solid #F1F5F9;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-item .n { font-size: 22px; font-weight: 800; color: #D97706; letter-spacing: -.03em; }
+    .stat-item .l { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: #94A3B8; margin-top: 1px; }
+
+    /* ── Main ────────────────────────────────── */
+    .main-wrap { padding: 48px 40px 80px; }
+
+    /* ── Team Section ────────────────────────── */
+    .team-section { margin-bottom: 72px; }
+    .team-section + .team-section { padding-top: 72px; border-top: 2px dashed #D1D5DB; }
+    .team-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #94A3B8; margin-bottom: 28px; }
+
+    /* ── Tree ────────────────────────────────── */
+    .tree-container { position: relative; overflow-x: auto; overflow-y: visible; padding-bottom: 8px; }
+    .tree-inner {
+      position: relative;
+      display: inline-flex; flex-direction: column; align-items: center;
+      min-width: 100%; gap: 0; padding: 4px 20px 20px;
+    }
+    .tree-svg {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; overflow: visible;
+    }
+
+    /* ── Node rows ───────────────────────────── */
+    .row-tl      { display: flex; justify-content: center; }
+    .row-artists { display: flex; justify-content: center; gap: 8px; margin-top: 44px; flex-wrap: nowrap; }
+    .row-games   { display: flex; justify-content: center; gap: 8px; margin-top: 40px; flex-wrap: nowrap; }
+    .row-clients { display: flex; justify-content: center; gap: 8px; margin-top: 36px; flex-wrap: nowrap; }
+
+    /* ── Node base ───────────────────────────── */
+    .tree-node {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; border-radius: 12px; padding: 10px 12px;
+      transition: transform .12s ease, box-shadow .12s ease; cursor: default;
+    }
+    .tree-node:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.13); }
+
+    /* Team Lead */
+    .node-tl {
+      background: #F59E0B; color: #fff;
+      width: 260px; min-height: 72px; border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(245,158,11,.35);
+    }
+    .node-tl .node-name { font-size: 16px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+    .node-tl .node-role { font-size: 10px; font-weight: 500; opacity: .75; margin-top: 4px; text-transform: uppercase; letter-spacing: .07em; }
+
+    /* Artist */
+    .node-artist {
+      background: #FEF3C7; color: #92400E;
+      width: 120px; min-height: 46px; border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    }
+    .node-artist .node-name { font-size: 10.5px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; white-space: normal; word-break: break-word; }
+
+    /* Game */
+    .node-game {
+      background: #fff; color: #374151;
+      width: 120px; min-height: 46px; border-radius: 10px;
+      border: 1px solid #E5E7EB;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+    .node-game .node-name { font-size: 10.5px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; white-space: normal; word-break: break-word; }
+
+    /* Client */
+    .node-client {
+      background: #F1F5F9; color: #64748B;
+      width: 120px; min-height: 40px; border-radius: 10px;
+      border: 1px solid #E2E8F0;
+    }
+    .node-client .node-name { font-size: 10px; font-weight: 600; letter-spacing: .01em; line-height: 1.3; white-space: normal; word-break: break-word; }
+
+    /* ── Footer ──────────────────────────────── */
+    .site-footer {
+      border-top: 1px solid #E2E8F0; padding: 20px 40px;
+      font-size: 12px; color: #94A3B8; display: flex; align-items: center; gap: 8px;
+    }
+    .footer-dot { width: 7px; height: 7px; border-radius: 50%; background: #22C55E; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <h1>Department Org Chart</h1>
+      <p id="header-sub">Loading…</p>
+    </div>
+    <span class="week-pill">Week 31 · 2026</span>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stats-inner" id="stats-inner"></div>
+</div>
+
+<main class="main-wrap" id="main-content"></main>
+
+<footer class="site-footer">
+  <span class="footer-dot"></span>
+  Source: Teams – Our Plan · Week 31, 2026 (Jul 27 – Aug 1)
+</footer>
+
+<script>
+// ──────────────────────────────────────────────────────────
+//  DATA  —  Week 31, 2026
+//  Source: "Teams – Our Plan" tab, new planning spreadsheet
+//  Game names & clients: original Games legend spreadsheet
+// ──────────────────────────────────────────────────────────
+const orgData = [
+  {
+    id: "dusan", teamName: "Team 01", lead: "Dusan",
+    games: [
+      { name: "Royal Match", client: "Dream Games",
+        artists: ["Vadim Bogoratov","Carlos Monteiro","Aleksa Spasic","Vladimir Vujasinovic",
+                  "Mateja Popović","Milos Milovac","Ivana Ilic","Isidora Jancic",
+                  "Igor Cheltsov","Luka Brankovic","Hike Gevorgyan","Alina Araqelyan","Vahram Altunyan"] }
+    ]
+  },
+  {
+    id: "aleksandra", teamName: "Team 02", lead: "Aleksandra",
+    games: [
+      { name: "Sort Puzzle Cash",    client: "—",               artists: ["Anna Subina","Olga Kostiuchenko"] },
+      { name: "Market Match!",       client: "Bold Games",       artists: ["Luka Katić"] },
+      { name: "Match Villains",      client: "Good Job Games",   artists: ["Amanuel Mamo","Harut Poghosyan","Pavel Postnikov","Diana Madoyan"] },
+      { name: "Two Dots",            client: "Zynga",            artists: ["Dragan Basic","Tatsiana Piatrouskaya"] },
+      { name: "Simon's Cat Match",   client: "Tactile Games",    artists: ["Tomasz Wenne"] }
+    ]
+  },
+  {
+    id: "natalya", teamName: "Team 03", lead: "Natalya",
+    games: [
+      { name: "Screw Masters",   client: "Supersonic", artists: ["Stevan Stanisic","Miroslav Simic"] },
+      { name: "Color Block Jam", client: "Rollic",     artists: ["Artem Fishkov","Vasyl Tymoshenko","Oleh Yastrzemskyi"] },
+      { name: "Arrow",           client: "Lessmore",   artists: ["Abiola Oke"] },
+      { name: "Color Match",     client: "Supersonic", artists: ["Stevan Stanisic"] },
+      { name: "Car Screw Escape",client: "Supersonic", artists: ["Stevan Stanisic"] }
+    ]
+  },
+  {
+    id: "mira", teamName: "Team 04", lead: "Mira",
+    games: [
+      { name: "Bingo Blitz",        client: "Playtika",       artists: ["Uladzislau Khalimonenka"] },
+      { name: "Garden Joy",          client: "Bgames",         artists: ["Anna Kazantseva"] },
+      { name: "Design Family Life",  client: "Supersonic",     artists: ["Mikalai Kalasenka","Arsen H. Blazhkiv"] },
+      { name: "Skeeboost",           client: "Liberty Pixel",  artists: ["Danijela Cvjetan"] },
+      { name: "Basket Battle",       client: "Supersonic",     artists: ["Daniel Ejiasi"] },
+      { name: "Conquer Countries",   client: "Supersonic",     artists: ["Hayk Gevorgyan"] }
+    ]
+  },
+  {
+    id: "oksana", teamName: "Team 05", lead: "Oksana",
+    games: [
+      { name: "Animals & Coins", client: "Innplay Labs", artists: ["Aliaksei Dziashchenia","Oleksandr Hanenko"] },
+      { name: "SLS",             client: "—",            artists: ["Oleksii Chyzh","Kirill Kotelyuk","Emmanuel Akinleye"] },
+      { name: "Build A Queen",   client: "Supersonic",   artists: ["Luka Kunovic"] },
+      { name: "Going Balls",     client: "Supersonic",   artists: ["Mihajlo Nikolic"] },
+      { name: "Bridge Race",     client: "SuperSonic",   artists: ["Shany Solomon"] }
+    ]
+  },
+  {
+    id: "illia", teamName: "Team 06", lead: "Illia",
+    games: [
+      { name: "Heroes vs. Hordes", client: "Swift Games",  artists: ["Vitaliy Pakholchenko","Anatoliy Petrov"] },
+      { name: "We Are Warriors",   client: "Lessmore",     artists: ["Andres Moriel Alcaide","Harry Dominic"] },
+      { name: "Dragon City",       client: "Zynga",        artists: ["Aliaksandr Zaitsau","Yuriy Dmitriyev"] },
+      { name: "Rouge Legend",      client: "PocketHaven",  artists: ["Satish Rawat","Aliaksei Kazlouski"] }
+    ]
+  },
+  {
+    id: "kris", teamName: "Team 07", lead: "Kris",
+    games: [
+      { name: "Klondike Adventures", client: "Vizor Games", artists: ["Shaghig Jouharian","Pavlo Kharchenko"] },
+      { name: "EatVenture",          client: "Lessmore",    artists: ["Mark Edward U.","George Pirtskhalava"] },
+      { name: "HI",                  client: "—",           artists: ["Oleksandr Nesterenko","Tajana Tomic"] },
+      { name: "Fish of Fortune",     client: "Whalo",       artists: ["Tristan M. Valino Morfe","Vsevolod Rodin"] }
+    ]
+  },
+  {
+    id: "iryna", teamName: "Team 08", lead: "Iryna",
+    games: [
+      { name: "House of Fun",   client: "Playtika",    artists: ["Ruslan Babaev"] },
+      { name: "POP! Slots",     client: "PlayStudios", artists: ["Ivan Krasnoshchoka"] },
+      { name: "MyKonami",       client: "—",           artists: ["Hendy Muchtar"] },
+      { name: "Slotomania",     client: "Playtika",    artists: ["Viacheslav Borshch"] },
+      { name: "GSN Casino",     client: "Scopely",     artists: ["Simon J. P. Liwaliw"] },
+      { name: "Sciplay Slots",  client: "Sciplay",     artists: ["Raesciel Ann L","Dmytro Kryvko","Mark M. David","Raffi Manukyan","Nikola Vasin"] }
+    ]
+  },
+  {
+    id: "vlada", teamName: "Team 09", lead: "Vlada",
+    games: [
+      { name: "Sunflower Slots",    client: "Sunflower",   artists: ["Vadym Ostapenko","Micheal Tekle"] },
+      { name: "Free Cash",          client: "Almedia",     artists: ["Ivan Milosavljevic","Karryl Dale Torres"] },
+      { name: "Game Cashouts",      client: "Brain Games", artists: ["Vladyslav Oliinyk"] },
+      { name: "Cashcow",            client: "MoonCow",     artists: ["Victoria Ituma"] },
+      { name: "WSOP",               client: "Playtika",    artists: ["Oleksii Onishchenko"] },
+      { name: "Governor of Poker",  client: "Playtika",    artists: ["Emmanuel Vincent P"] }
+    ]
+  },
+  {
+    id: "denys", teamName: "Team 10", lead: "Denys",
+    games: [
+      { name: "Bingo Blitz",    client: "Playtika", artists: ["Ori Ran","Franz Alcantara Anonuevo"] },
+      { name: "BU",             client: "—",        artists: ["Lord Mark Brazil Espina"] },
+      { name: "Solitaire Cash", client: "Papaya",   artists: ["Krzysztof Wach","Mykyta Shevchenko"] },
+      { name: "BI",             client: "—",        artists: ["Rostyslav Tatusko","Mark Chinua Ejiasi"] },
+      { name: "Bingo Bash",     client: "Scopely",  artists: ["Dmitry Vereshchagin","Nikita Khrushchou"] }
+    ]
+  },
+  {
+    id: "yurii", teamName: "Team 11", lead: "Yurii",
+    games: [
+      { name: "Domino Dreams",    client: "SuperPlay", artists: ["Maksym Cheprasov","Gustavo O. de Carvalho"] },
+      { name: "Yahtzee",          client: "Scopely",   artists: ["Viacheslav Mandzyk","Ron Lev","Carlo N. M. Montenegro"] },
+      { name: "Star Trek",        client: "Scopely",   artists: ["Robert Davtyan"] },
+      { name: "Disney Solitaire", client: "SuperPlay", artists: ["Fyodor Olevinski","Nenad Jerinkic"] },
+      { name: "Dice Dreams",      client: "SuperPlay", artists: ["Aleksa Parapid"] }
+    ]
+  },
+  {
+    id: "isidora", teamName: "Team 12", lead: "Isidora",
+    games: [
+      { name: "Merge Dragon",  client: "Zynga",    artists: ["Gigih Sukoyo","Fernando V. Zamorano","Kirill Laptev"] },
+      { name: "Sherlock",      client: "G5",       artists: ["Hana Filipovic"] },
+      { name: "Merge Cruise",  client: "PeerPlay", artists: ["Hans Cristian"] }
+    ]
+  },
+  {
+    id: "mariam", teamName: "Team 13", lead: "Mariam",
+    games: [
+      { name: "Tetris Block Party", client: "PlayStudios", artists: ["Mile Eror","Franklin Fache"] },
+      { name: "Jewelscapes",        client: "TikGames",    artists: ["Petar Gyulev","Mark C. Ifediogor","Maksim Ivanov","Vidan Tomic"] },
+      { name: "Scrabble 2",         client: "Scopely",     artists: ["Yehor Hryhoriev"] },
+      { name: "Scrabble Go",        client: "Scopely",     artists: ["John G. M. Cayetano","Veranika Starkova"] }
+    ]
+  },
+];
+
+// ──────────────────────────────────────────────────────────
+//  HELPERS  — unique artists / clients per team
+// ──────────────────────────────────────────────────────────
+function uniqueArtists(team) {
+  const out = [], seen = new Set();
+  team.games.forEach(g => g.artists.forEach(a => { if (!seen.has(a)) { seen.add(a); out.push(a); } }));
+  return out;
+}
+
+function uniqueClients(team) {
+  const out = [], seen = new Set();
+  team.games.forEach(g => { if (!seen.has(g.client)) { seen.add(g.client); out.push(g.client); } });
+  return out;
+}
+
+// ──────────────────────────────────────────────────────────
+//  STATS
+// ──────────────────────────────────────────────────────────
+function computeStats(data) {
+  const artists = new Set(data.flatMap(t => t.games.flatMap(g => g.artists)));
+  const games   = new Set(data.flatMap(t => t.games.map(g => g.name)));
+  const clients = new Set(data.flatMap(t => t.games.map(g => g.client)).filter(c => c !== '—'));
+  return { teams: data.length, artists: artists.size, games: games.size, clients: clients.size };
+}
+
+// ──────────────────────────────────────────────────────────
+//  RENDER
+// ──────────────────────────────────────────────────────────
+function renderStats(data) {
+  const s = computeStats(data);
+  document.getElementById("header-sub").textContent =
+    `${s.teams} Teams · ${s.artists} Artists · ${s.games} Games · ${s.clients} Clients`;
+  document.getElementById("stats-inner").innerHTML = [
+    ["Teams",   s.teams],
+    ["Artists", s.artists],
+    ["Games",   s.games],
+    ["Clients", s.clients],
+  ].map(([l, n]) => `
+    <div class="stat-item">
+      <div class="n">${n}</div><div class="l">${l}</div>
+    </div>`).join("");
+}
+
+function renderTeam(team) {
+  const tid = team.id;
+
+  const artists = uniqueArtists(team);
+  const clients = uniqueClients(team);
+
+  const artistNodes = artists.map((a, i) =>
+    `<div class="tree-node node-artist" id="a-${tid}-${i}"><div class="node-name">${a}</div></div>`
+  ).join("");
+
+  const gameNodes = team.games.map((g, i) =>
+    `<div class="tree-node node-game" id="g-${tid}-${i}"><div class="node-name">${g.name}</div></div>`
+  ).join("");
+
+  const clientNodes = clients.map((c, i) =>
+    `<div class="tree-node node-client" id="c-${tid}-${i}"><div class="node-name">${c}</div></div>`
+  ).join("");
+
+  return `
+    <section class="team-section" id="team-${tid}">
+      <div class="team-label">${team.teamName}</div>
+      <div class="tree-container">
+        <div class="tree-inner" id="tree-${tid}">
+          <div class="row-tl">
+            <div class="tree-node node-tl" id="tl-${tid}">
+              <div class="node-name">${team.lead}</div>
+              <div class="node-role">Creative Team Lead</div>
+            </div>
+          </div>
+          <div class="row-artists">${artistNodes}</div>
+          <div class="row-games">${gameNodes}</div>
+          <div class="row-clients">${clientNodes}</div>
+          <svg class="tree-svg" id="svg-${tid}"></svg>
+        </div>
+      </div>
+    </section>`;
+}
+
+function renderAll(data) {
+  renderStats(data);
+  document.getElementById("main-content").innerHTML = data.map(renderTeam).join("");
+}
+
+// ──────────────────────────────────────────────────────────
+//  SVG CONNECTORS
+// ──────────────────────────────────────────────────────────
+const LINE_COLOR = "#CBD5E1";
+const LINE_W     = "2";
+const ARR        = 6;
+
+function ns(tag) { return document.createElementNS("http://www.w3.org/2000/svg", tag); }
+
+function ctr(el, base) {
+  const r = el.getBoundingClientRect(), b = base.getBoundingClientRect();
+  return {
+    cx:     r.left - b.left + r.width  / 2,
+    top:    r.top  - b.top,
+    bottom: r.bottom - b.top,
+  };
+}
+
+function addPath(svg, d) {
+  const p = ns("path");
+  p.setAttribute("d", d);
+  p.setAttribute("stroke", LINE_COLOR);
+  p.setAttribute("stroke-width", LINE_W);
+  p.setAttribute("fill", "none");
+  p.setAttribute("stroke-linecap", "round");
+  svg.appendChild(p);
+}
+
+function addArrow(svg, x, y) {
+  const poly = ns("polygon");
+  poly.setAttribute("points", `${x},${y} ${x - ARR/2},${y - ARR} ${x + ARR/2},${y - ARR}`);
+  poly.setAttribute("fill", LINE_COLOR);
+  svg.appendChild(poly);
+}
+
+function drawConnectors(team) {
+  const tid  = team.id;
+  const base = document.getElementById(`tree-${tid}`);
+  const svg  = document.getElementById(`svg-${tid}`);
+  svg.setAttribute("width",  base.offsetWidth);
+  svg.setAttribute("height", base.offsetHeight);
+
+  const artists = uniqueArtists(team);
+  const clients = uniqueClients(team);
+  if (!artists.length) return;
+
+  const tl   = ctr(document.getElementById(`tl-${tid}`), base);
+  const aPos = artists.map((_, i) => ctr(document.getElementById(`a-${tid}-${i}`), base));
+  const gPos = team.games.map((_, i) => ctr(document.getElementById(`g-${tid}-${i}`), base));
+  const cPos = clients.map((_, i) => ctr(document.getElementById(`c-${tid}-${i}`), base));
+  const artistIdx = new Map(artists.map((a, i) => [a, i]));
+  const clientIdx = new Map(clients.map((c, i) => [c, i]));
+
+  // ── TL → T-bus → artists ──
+  const busY = tl.bottom + (aPos[0].top - tl.bottom) / 2;
+  addPath(svg, `M ${tl.cx} ${tl.bottom} L ${tl.cx} ${busY}`);
+  if (aPos.length > 1) addPath(svg, `M ${aPos[0].cx} ${busY} L ${aPos[aPos.length-1].cx} ${busY}`);
+  aPos.forEach(ap => { addPath(svg, `M ${ap.cx} ${busY} L ${ap.cx} ${ap.top}`); addArrow(svg, ap.cx, ap.top); });
+
+  // ── Artists → games (one line per artist-game pair; one arrowhead per game) ──
+  team.games.forEach((game, gi) => {
+    const gp = gPos[gi];
+    game.artists.forEach(a => {
+      const ai = artistIdx.get(a);
+      if (ai == null) return;
+      addPath(svg, `M ${aPos[ai].cx} ${aPos[ai].bottom} L ${gp.cx} ${gp.top}`);
+    });
+    addArrow(svg, gp.cx, gp.top);
+  });
+
+  // ── Games → clients (one line per game; one arrowhead per client) ──
+  team.games.forEach((game, gi) => {
+    const ci = clientIdx.get(game.client);
+    if (ci == null) return;
+    addPath(svg, `M ${gPos[gi].cx} ${gPos[gi].bottom} L ${cPos[ci].cx} ${cPos[ci].top}`);
+  });
+  cPos.forEach(cp => addArrow(svg, cp.cx, cp.top));
+}
+
+// ──────────────────────────────────────────────────────────
+//  INIT
+// ──────────────────────────────────────────────────────────
+renderAll(orgData);
+
+requestAnimationFrame(() => {
+  orgData.forEach(drawConnectors);
+});
+
+window.addEventListener("resize", () => {
+  orgData.forEach(t => { const s = document.getElementById(`svg-${t.id}`); if (s) s.innerHTML = ""; });
+  orgData.forEach(drawConnectors);
+});
+</script>
+</body>
+</html>
