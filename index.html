@@ -118,6 +118,9 @@
     }
     .node-client .node-name { font-size: 10px; font-weight: 600; letter-spacing: .01em; line-height: 1.3; white-space: normal; word-break: break-word; }
 
+    /* ── Compact scaling (Dusan's large team) ── */
+    #team-dusan .tree-inner { zoom: 0.85; }
+
     /* ── Pod sections ────────────────────────── */
     .pod-section {
       margin-bottom: 40px;
@@ -504,8 +507,9 @@ function drawConnectors(team) {
   const tid  = team.id;
   const base = document.getElementById(`tree-${tid}`);
   const svg  = document.getElementById(`svg-${tid}`);
-  svg.setAttribute("width",  base.offsetWidth);
-  svg.setAttribute("height", base.offsetHeight);
+  const baseRect = base.getBoundingClientRect();
+  svg.setAttribute("width",  baseRect.width);
+  svg.setAttribute("height", baseRect.height);
 
   const artists = uniqueArtists(team).filter(a => a !== team.leadArtist);
   const clients = uniqueClients(team);
