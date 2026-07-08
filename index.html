@@ -146,6 +146,7 @@
       letter-spacing: .1em; color: #94A3B8; display: block; margin-bottom: 3px;
     }
     .pod-name { font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
+    .pod-genre { font-size: 11px; font-weight: 500; color: #94A3B8; margin-top: 4px; letter-spacing: .03em; }
     .pod-badge {
       position: absolute; right: 36px;
       padding: 5px 14px; border-radius: 100px;
@@ -329,9 +330,9 @@ const orgData = [
 //  PODS
 // ──────────────────────────────────────────────────────────
 const pods = [
-  { id: "nadav",  manager: "Nadav",  color: "#0EA5E9", teamIds: ["dusan","aleksandra"] },
-  { id: "eden",   manager: "Eden",   color: "#10B981", teamIds: ["natalya","mira","oksana","illia","kris"] },
-  { id: "yogev",  manager: "Yogev",  color: "#8B5CF6", teamIds: ["iryna","vlada","denys","yurii","isidora","mariam"] },
+  { id: "nadav",  manager: "Nadav",  color: "#0EA5E9", teamIds: ["dusan","aleksandra"],                          genre: "Royal Match" },
+  { id: "eden",   manager: "Eden",   color: "#10B981", teamIds: ["natalya","mira","oksana","illia","kris"],        genre: "Action" },
+  { id: "yogev",  manager: "Yogev",  color: "#8B5CF6", teamIds: ["iryna","vlada","denys","yurii","isidora","mariam"], genre: "Casino & Puzzle" },
 ];
 
 // ──────────────────────────────────────────────────────────
@@ -440,6 +441,7 @@ function renderAll(data) {
           <div class="pod-meta">
             <span class="pod-role">Creative Group Manager</span>
             <div class="pod-name" style="color:${pod.color}">${pod.manager}</div>
+            ${pod.genre ? `<div class="pod-genre">${pod.genre}</div>` : ''}
           </div>
           <span class="pod-badge" style="background:${pod.color}">${teams.length} Team${teams.length !== 1 ? 's' : ''}</span>
         </div>
