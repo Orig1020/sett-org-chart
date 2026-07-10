@@ -100,6 +100,11 @@
     .node-artist.game-sep { margin-left: 24px; }
     .node-artist.alt-blue  { background: #E0F2FE; color: #0369A1; }
     .node-artist .node-name { font-size: 10.5px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; white-space: normal; word-break: break-word; }
+    .tag-new {
+      display: inline-block; background: #22C55E; color: #fff;
+      font-size: 7.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: 1px 4px; border-radius: 3px; margin-left: 3px; vertical-align: middle;
+    }
 
     /* Game */
     .node-game {
@@ -258,7 +263,7 @@ const orgData = [
     ]
   },
   {
-    id: "kris", teamName: "Team 07", lead: "Kris", highlights: ["Konrad Grochulski"], leadArtist: "Konrad Grochulski",
+    id: "kris", teamName: "Team 07", lead: "Kris", highlights: ["Konrad Grochulski"], leadArtist: "Konrad Grochulski", newArtists: ["Aleksa Stojšić"],
     games: [
       { name: "Klondike Adventures", client: "Vizor Games", artists: ["Shaghig Jouharian","Pavlo Kharchenko"] },
       { name: "EatVenture",          client: "Lessmore",    artists: ["Mark Edward U.","George Pirtskhalava"] },
@@ -279,7 +284,7 @@ const orgData = [
     ]
   },
   {
-    id: "vlada", teamName: "Team 09", lead: "Vlada", highlights: ["Vadym Ostapenko"], leadArtist: "Vadym Ostapenko",
+    id: "vlada", teamName: "Team 09", lead: "Vlada", highlights: ["Vadym Ostapenko"], leadArtist: "Vadym Ostapenko", newArtists: ["Emmanuel Vincent P"],
     games: [
       { name: "Sunflower Slots",    client: "Sunflower",   artists: ["Vadym Ostapenko","Micheal Tekle"] },
       { name: "Free Cash",          client: "Almedia",     artists: ["Ivan Milosavljevic","Karryl Dale Torres"] },
@@ -392,10 +397,12 @@ function renderTeam(team) {
   team.games.forEach((game, gi) => game.artists.forEach(a => { if (!artistGameMap.has(a)) artistGameMap.set(a, gi); }));
 
   const highlightSet = new Set(team.highlights || []);
+  const newSet = new Set(team.newArtists || []);
   const artistNodes = artists.map((a, i) => {
     const isSep = i > 0 && artistGameMap.get(a) !== artistGameMap.get(artists[i - 1]);
     const extra = (isSep ? ' game-sep' : '') + (highlightSet.has(a) ? ' alt-blue' : '');
-    return `<div class="tree-node node-artist${extra}" id="a-${tid}-${i}"><div class="node-name">${a}</div></div>`;
+    const newTag = newSet.has(a) ? '<span class="tag-new">new</span>' : '';
+    return `<div class="tree-node node-artist${extra}" id="a-${tid}-${i}"><div class="node-name">${a}${newTag}</div></div>`;
   }).join("");
 
   const gameNodes = team.games.map((g, i) =>
